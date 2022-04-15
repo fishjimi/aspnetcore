@@ -21,6 +21,11 @@ public class RouteHandlerEndpointRouteBuilderExtensionsTest : LoggedTest
         return Assert.IsType<ModelEndpointDataSource>(Assert.Single(endpointRouteBuilder.DataSources));
     }
 
+    private EndpointDataSource GetEndpointDataSource(IEndpointRouteBuilder endpointRouteBuilder)
+    {
+        return Assert.IsAssignableFrom<EndpointDataSource>(Assert.Single(endpointRouteBuilder.DataSources));
+    }
+
     private RouteEndpointBuilder GetRouteEndpointBuilder(IEndpointRouteBuilder endpointRouteBuilder)
     {
         return Assert.IsType<RouteEndpointBuilder>(Assert.Single(GetBuilderEndpointDataSource(endpointRouteBuilder).EndpointBuilders));
@@ -970,6 +975,40 @@ public class RouteHandlerEndpointRouteBuilderExtensionsTest : LoggedTest
         var streamReader = new StreamReader(httpResponse.Body);
         var body = streamReader.ReadToEndAsync().Result;
         Assert.Equal("loggerErrorIsEnabled: True, parentName: RouteHandlerEndpointRouteBuilderExtensionsTest", body);
+    }
+
+    [Fact]
+    public async Task MapGroupWithRouteParameter_BuildsEndpointWithRouteSpecificBinding()
+    {
+        var builder = new DefaultEndpointRouteBuilder(new ApplicationBuilder(new EmptyServiceProvider()));
+
+        _ = builder
+            .MapGroup("/{id}")
+            .MapGet("", (int? id, HttpContext httpContext) =>
+            {
+                httpContext.Items["input"] = id;
+            });
+
+        var dataSource = GetEndpointDataSource(builder);
+
+        // Trigger Endpoint build by calling getter.
+        var endpoint = Assert.Single(dataSource.Endpoints);
+        var routeEndpoint = Assert.IsType<RouteEndpoint>(endpoint);
+
+        var methodMetadata = endpoint.Metadata.GetMetadata<IHttpMethodMetadata>();
+        Assert.NotNull(methodMetadata);
+        var method = Assert.Single(methodMetadata!.HttpMethods);
+        Assert.Equal("GET", method);
+
+        Assert.Equal("HTTP: GET /{id}", endpoint.DisplayName);
+        Assert.Equal("/{id}", routeEndpoint.RoutePattern.RawText);
+
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.RouteValues["id"] = "42";
+
+        await endpoint.RequestDelegate!(httpContext);
+
+        Assert.Equal(42, httpContext.Items["input"]);
     }
 
     class ServiceAccessingRouteHandlerFilter : IRouteHandlerFilter
