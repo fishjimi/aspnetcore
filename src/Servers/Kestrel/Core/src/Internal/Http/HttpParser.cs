@@ -15,14 +15,20 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http
     public class HttpParser<TRequestHandler> : IHttpParser<TRequestHandler> where TRequestHandler : IHttpHeadersHandler, IHttpRequestLineHandler
     {
         private readonly bool _showErrorDetails;
+        private readonly bool _enableLineFeedTerminator;
 
-        public HttpParser() : this(showErrorDetails: true)
+        public HttpParser() : this(showErrorDetails: true, enableLineFeedTerminator: true)
         {
         }
 
-        public HttpParser(bool showErrorDetails)
+        public HttpParser(bool showErrorDetails) : this(showErrorDetails, enableLineFeedTerminator: false)
+        {
+        }
+
+        internal HttpParser(bool showErrorDetails, bool enableLineFeedTerminator)
         {
             _showErrorDetails = showErrorDetails;
+            _enableLineFeedTerminator = enableLineFeedTerminator;
         }
 
         // byte types don't have a data type annotation so we pre-cast them; to avoid in-place casts
@@ -115,11 +121,35 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http
             // Consume space
             offset++;
 
-            // Version + CR is 9 bytes which should take us to .Length
-            // LF should have been dropped prior to method call
-            if ((uint)offset + 9 != (uint)requestLine.Length || requestLine[offset + sizeof(ulong)] != ByteCR)
+            if (!_enableLineFeedTerminator)
             {
-                RejectRequestLine(requestLine);
+                // Version + CR is 9 bytes which should take us to .Length
+                // LF should have been dropped prior to method call
+                if ((uint)offset + 9 != (uint)requestLine.Length || requestLine[offset + 8] != ByteCR)
+                {
+                    RejectRequestLine(requestLine);
+                }
+            }
+            else
+            {
+                // LF should have been dropped prior to method call
+                // If offset + 8 is .Length then requestLine is valid since it mean LF was the next char
+                if ((uint)offset + 8 != (uint)requestLine.Length)
+                {
+                    // Version + CR is 9 bytes which should take us to .Length
+                    if ((uint)offset + 9 != (uint)requestLine.Length || requestLine[offset + 8] != ByteCR)
+                    {
+                        RejectRequestLine(requestLine);
+                    }
+                }
+                else 
+                {
+                    // e.g., GET / HTTP1.\r\n
+                    if (requestLine[offset + 7] == ByteCR)
+                    {
+                        RejectRequestLine(requestLine);
+                    }
+                }
             }
 
             // Version
@@ -201,44 +231,59 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http
                         // the bounds check for the next lookup of span[length]
                         if ((uint)length < (uint)span.Length)
                         {
+                            var headerSpan = span[..length]; 
+
+                            if (length < 4)
+                            {
+                                // Less than min possible headerSpan of 3 bytes a:b
+                                RejectRequestHeader(headerSpan);
+                            }
+                            
                             // Early memory read to hide latency
-                            var expectedCR = span[length];
-                            // Correctly has a CR, move to next
+                            var lineTerminator = span[length];
+                            // Correctly has a CR/LF, move to next
                             length++;
 
-                            if (expectedCR != ByteCR)
+                            if (lineTerminator == ByteLF)
                             {
-                                // Sequence needs to be CRLF not LF first.
-                                RejectRequestHeader(span[..length]);
-                            }
-
-                            if ((uint)length < (uint)span.Length)
-                            {
-                                // Early memory read to hide latency
-                                var expectedLF = span[length];
-                                // Correctly has a LF, move to next
-                                length++;
-
-                                if (expectedLF != ByteLF ||
-                                    length < 5 ||
-                                    // Exclude the CRLF from the headerLine and parse the header name:value pair
-                                    !TryTakeSingleHeader(handler, span[..(length - 2)]))
+                                if (!_enableLineFeedTerminator)
                                 {
-                                    // Sequence needs to be CRLF and not contain an inner CR not part of terminator.
-                                    // Less than min possible headerSpan of 5 bytes a:b\r\n
-                                    // Not parsable as a valid name:value header pair.
+                                    // Sequence needs to be CRLF not LF first.
                                     RejectRequestHeader(span[..length]);
                                 }
-
-                                // Read the header successfully, skip the reader forward past the headerSpan.
-                                span = span.Slice(length);
-                                reader.Advance(length);
                             }
                             else
                             {
-                                // No enough data, set length to 0.
-                                length = 0;
+                                if ((uint)length < (uint)span.Length)
+                                {
+                                    // Early memory read to hide latency
+                                    var expectedLF = span[length];
+                                    // Correctly has a LF, move to next
+                                    length++;
+
+                                    if (expectedLF != ByteLF)
+                                    {
+                                        // Sequence needs to be CRLF not LF first.
+                                        RejectRequestHeader(span[..length]);
+                                    }
+                                }
+                                else
+                                {
+                                    // No enough data, set length to 0.
+                                    length = 0;
+                                }
                             }
+                                    
+                            if (length != 0 && !TryTakeSingleHeader(handler, headerSpan))
+                            {
+                                // Sequence needs to be CRLF and not contain an inner CR not part of terminator.
+                                // Not parsable as a valid name:value header pair.
+                                RejectRequestHeader(span[..length]);
+                            }
+
+                            // Read the header successfully, skip the reader forward past the headerSpan.
+                            span = span[length..];
+                            reader.Advance(length);
                         }
                     }
 
@@ -287,14 +332,17 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http
             if (currentSlice.Slice(reader.Position, lineEndPosition.Value).Length == currentSlice.Length - 1)
             {
                 // No enough data, so CRLF can't currently be there.
-                // However, we need to check the found char is CR and not LF
+                // However, we need to check the found char is CR and not LF (unless quirk mode)
 
                 // Advance 1 to include CR/LF in lineEnd
                 lineEnd = currentSlice.GetPosition(1, lineEndPosition.Value);
                 headerSpan = currentSlice.Slice(reader.Position, lineEnd).ToSpan();
                 if (headerSpan[^1] != ByteCR)
                 {
-                    RejectRequestHeader(headerSpan);
+                    if (!_enableLineFeedTerminator || headerSpan[^1] != ByteLF)
+                    {
+                        RejectRequestHeader(headerSpan);
+                    }
                 }
                 return -1;
             }
@@ -305,14 +353,35 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http
 
             if (headerSpan.Length < 5)
             {
-                // Less than min possible headerSpan is 5 bytes a:b\r\n
-                RejectRequestHeader(headerSpan);
+                if (!_enableLineFeedTerminator || headerSpan.Length < 4)
+                {
+                    // Less than min possible headerSpan is 4 bytes a:b\n or 5 bytes a:b\r\n
+                    RejectRequestHeader(headerSpan);
+                }
             }
 
             if (headerSpan[^2] != ByteCR)
             {
-                // Sequence needs to be CRLF not LF first.
-                RejectRequestHeader(headerSpan[..^1]);
+                if (!_enableLineFeedTerminator)
+                {
+                    // Sequence needs to be CRLF.
+                    RejectRequestHeader(headerSpan[..^1]);
+                }
+                else if (headerSpan[^2] != ByteLF)
+                {
+                    RejectRequestHeader(headerSpan[..^1]);
+                }
+                else
+                {
+                    // Line ends with LF and quirk mode is enabled, try to parse the header
+                    if (!TryTakeSingleHeader(handler, headerSpan[..^1]))
+                    {
+                        // Not parsable as a valid name:value header pair.
+                        RejectRequestHeader(headerSpan);
+                    }
+
+                    return headerSpan.Length;
+                }
             }
 
             if (headerSpan[^1] != ByteLF ||
