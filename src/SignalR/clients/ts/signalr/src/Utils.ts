@@ -50,6 +50,10 @@ export class Platform {
         return !Platform.isNode && typeof window === "object" && typeof window.document === "undefined";
     }
 
+    static get isUniapp(): boolean {
+        return typeof uni === "object";
+    }
+
     // Node apps shouldn't have a window object, but WebWorkers don't either
     // so we need to check for both WebWorker and window
     public static get isNode(): boolean {
