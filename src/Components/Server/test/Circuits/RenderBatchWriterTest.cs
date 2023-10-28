@@ -48,7 +48,6 @@ public class RenderBatchWriterTest
             default,
             new ArrayRange<int>(new[] { 123, int.MaxValue, int.MinValue, 456 }, 3), // Only use first 3 to show that param is respected
             default,
-            default,
             default));
 
         // Assert
@@ -76,7 +75,6 @@ public class RenderBatchWriterTest
             new ArrayRange<RenderTreeFrame>(),
             new ArrayRange<int>(),
             new ArrayRange<ulong>(new ulong[] { 123, ulong.MaxValue, ulong.MinValue, 456 }, 3), // Only use first 3 to show that param is respected
-            default,
             default));
 
         // Assert
@@ -105,7 +103,6 @@ public class RenderBatchWriterTest
                     new RenderTreeDiff(123, default),
                     new RenderTreeDiff(int.MaxValue, default),
             }, 2),
-            default,
             default,
             default,
             default,
@@ -166,7 +163,6 @@ public class RenderBatchWriterTest
             default,
             default,
             default,
-            default,
             default));
 
         // Assert
@@ -219,7 +215,7 @@ public class RenderBatchWriterTest
                     RenderTreeFrame.Markup(132, "Some markup"),
                     RenderTreeFrame.Text(133, "\n\t  "),
                     RenderTreeFrame.NamedEvent(135, "SomeEventType", "Some assigned name"),
-                    RenderTreeFrame.ComponentRenderModeFrame(136, RenderMode.Auto),
+                    RenderTreeFrame.ComponentRenderModeFrame(136, RenderMode.InteractiveAuto),
 
                     // Testing deduplication
                     RenderTreeFrame.Attribute(200, "Attribute with string value", "String value"),
@@ -229,7 +225,6 @@ public class RenderBatchWriterTest
                     RenderTreeFrame.Markup(237, "Some markup"), // Will not be deduplicated
                     RenderTreeFrame.Text(238, "\n\t  "), // Will be deduplicated
             }, 18),
-            default,
             default,
             default,
             default));

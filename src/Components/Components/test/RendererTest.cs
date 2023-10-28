@@ -1460,7 +1460,7 @@ public class RendererTest
 
         // Assert
         Assert.Equal(TaskStatus.Canceled, task.Status);
-        await Assert.ThrowsAsync<TaskCanceledException>(() => task);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
     }
 
     [Fact]
@@ -1492,7 +1492,7 @@ public class RendererTest
 
         // Assert
         Assert.Equal(TaskStatus.Canceled, task.Status);
-        await Assert.ThrowsAsync<TaskCanceledException>(() => task);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
     }
 
     [Fact]
@@ -1528,7 +1528,7 @@ public class RendererTest
         // Assert
         Assert.NotNull(arg);
         Assert.Equal(TaskStatus.Canceled, task.Status);
-        await Assert.ThrowsAsync<TaskCanceledException>(() => task);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
     }
 
     [Fact]
@@ -5002,7 +5002,7 @@ public class RendererTest
         var component = new TestComponent(builder =>
         {
             builder.OpenComponent<TestComponent>(0);
-            builder.AddComponentRenderMode(1, new ComponentWithUnknownRenderMode.UnknownRenderMode());
+            builder.AddComponentRenderMode(new ComponentWithUnknownRenderMode.UnknownRenderMode());
             builder.CloseComponent();
         });
 
@@ -5046,7 +5046,7 @@ public class RendererTest
         {
             builder.OpenComponent<TestComponent>(0);
             builder.AddComponentParameter(1, nameof(MessageComponent.Message), "Some message");
-            builder.AddComponentRenderMode(2, new SubstituteComponentRenderMode());
+            builder.AddComponentRenderMode(new SubstituteComponentRenderMode());
             builder.CloseComponent();
         });
 

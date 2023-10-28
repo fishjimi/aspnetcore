@@ -9,7 +9,7 @@ internal interface IInternalJSImportMethods
 
     string GetApplicationEnvironment();
 
-    void NavigationManager_EnableNavigationInterception();
+    void NavigationManager_EnableNavigationInterception(int rendererId);
 
     void NavigationManager_ScrollToElement(string id);
 
@@ -17,17 +17,15 @@ internal interface IInternalJSImportMethods
 
     string NavigationManager_GetBaseUri();
 
-    void NavigationManager_SetHasLocationChangingListeners(bool value);
+    void NavigationManager_SetHasLocationChangingListeners(int rendererId, bool value);
 
     int RegisteredComponents_GetRegisteredComponentsCount();
 
-    int RegisteredComponents_GetId(int index);
+    string RegisteredComponents_GetAssembly(int index);
 
-    string RegisteredComponents_GetAssembly(int id);
+    string RegisteredComponents_GetTypeName(int index);
 
-    string RegisteredComponents_GetTypeName(int id);
+    string RegisteredComponents_GetParameterDefinitions(int index);
 
-    string RegisteredComponents_GetParameterDefinitions(int id);
-
-    string RegisteredComponents_GetParameterValues(int id);
+    string RegisteredComponents_GetParameterValues(int index);
 }

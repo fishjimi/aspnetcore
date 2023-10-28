@@ -34,7 +34,7 @@ public abstract class RequestDelegateCreationTestBase : LoggedTest
 
     protected abstract bool IsGeneratorEnabled { get; }
 
-    internal static readonly CSharpParseOptions ParseOptions = new CSharpParseOptions(LanguageVersion.Preview).WithFeatures(new[] { new KeyValuePair<string, string>("InterceptorsPreview", "") });
+    internal static readonly CSharpParseOptions ParseOptions = new CSharpParseOptions(LanguageVersion.Preview).WithFeatures(new[] { new KeyValuePair<string, string>("InterceptorsPreviewNamespaces", "Microsoft.AspNetCore.Http.Generated") });
     private static readonly Project _baseProject = CreateProject();
 
     internal async Task<(GeneratorRunResult?, Compilation)> RunGeneratorAsync(string sources, params string[] updatedSources)
@@ -112,7 +112,7 @@ public abstract class RequestDelegateCreationTestBase : LoggedTest
     internal Endpoint GetEndpointFromCompilation(Compilation compilation, bool? expectGeneratedCodeOverride = null, IServiceProvider serviceProvider = null) =>
         Assert.Single(GetEndpointsFromCompilation(compilation, expectGeneratedCodeOverride, serviceProvider));
 
-    internal Endpoint[] GetEndpointsFromCompilation(Compilation compilation, bool? expectGeneratedCodeOverride = null, IServiceProvider serviceProvider = null)
+    internal Endpoint[] GetEndpointsFromCompilation(Compilation compilation, bool? expectGeneratedCodeOverride = null, IServiceProvider serviceProvider = null, bool skipGeneratedCodeCheck = false)
     {
         var assemblyName = compilation.AssemblyName!;
         var symbolsName = Path.ChangeExtension(assemblyName, "pdb");
@@ -166,6 +166,11 @@ public abstract class RequestDelegateCreationTestBase : LoggedTest
 
         // Trigger Endpoint build by calling getter.
         var endpoints = dataSource.Endpoints.ToArray();
+
+        if (skipGeneratedCodeCheck == true)
+        {
+            return endpoints;
+        }
 
         foreach (var endpoint in endpoints)
         {
@@ -279,6 +284,7 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Http.Generators.Tests;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.DependencyInjection;
 
 public static class {{className}}
 {

@@ -24,6 +24,8 @@ internal abstract class CollectionConverter<TCollection> : FormDataConverter<TCo
 internal class CollectionConverter<TCollection, TCollectionPolicy, TBuffer, TElement> : CollectionConverter<TCollection>
     where TCollectionPolicy : ICollectionBufferAdapter<TCollection, TBuffer, TElement>
 {
+    private static readonly Type _elementType = typeof(TElement);
+
     // Indexes up to 100 are pre-allocated to avoid allocations for common cases.
     private static readonly string[] Indexes = new string[] {
         "[0]", "[1]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]", "[8]", "[9]",
@@ -46,6 +48,8 @@ internal class CollectionConverter<TCollection, TCollectionPolicy, TBuffer, TEle
         _elementConverter = elementConverter;
     }
 
+    [RequiresDynamicCode(FormMappingHelpers.RequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(FormMappingHelpers.RequiresUnreferencedCodeMessage)]
     internal override bool TryRead(
         ref FormDataReader context,
         Type type,
@@ -54,7 +58,7 @@ internal class CollectionConverter<TCollection, TCollectionPolicy, TBuffer, TEle
         out bool found)
     {
         TElement currentElement;
-        TBuffer buffer;
+        TBuffer? buffer = default;
         bool foundCurrentElement;
         bool currentElementSuccess;
         bool succeded;
@@ -63,16 +67,16 @@ internal class CollectionConverter<TCollection, TCollectionPolicy, TBuffer, TEle
         try
         {
             context.PushPrefix("[0]");
-            succeded = _elementConverter.TryRead(ref context, typeof(TElement), options, out currentElement!, out found);
+            succeded = _elementConverter.TryRead(ref context, _elementType, options, out currentElement!, out found);
         }
         finally
         {
             context.PopPrefix("[0]");
         }
+
         if (!found)
         {
-            result = default;
-            return succeded;
+            return TryReadSingleValueCollection(ref context, out result, ref found, ref buffer, ref succeded);
         }
 
         // We already know we found an element;
@@ -85,8 +89,17 @@ internal class CollectionConverter<TCollection, TCollectionPolicy, TBuffer, TEle
         try
         {
             context.PushPrefix("[1]");
-            currentElementSuccess = _elementConverter.TryRead(ref context, typeof(TElement), options, out currentElement!, out foundCurrentElement);
+            currentElementSuccess = _elementConverter.TryRead(ref context, _elementType, options, out currentElement!, out foundCurrentElement);
             succeded = succeded && currentElementSuccess;
+        }
+        catch
+        {
+            if (buffer != null)
+            {
+                // Ensure the buffer is cleaned up if we fail.
+                result = TCollectionPolicy.ToResult(buffer);
+            }
+            throw;
         }
         finally
         {
@@ -113,8 +126,17 @@ internal class CollectionConverter<TCollection, TCollectionPolicy, TBuffer, TEle
             try
             {
                 context.PushPrefix(prefix);
-                currentElementSuccess = _elementConverter.TryRead(ref context, typeof(TElement), options, out currentElement!, out foundCurrentElement);
+                currentElementSuccess = _elementConverter.TryRead(ref context, _elementType, options, out currentElement!, out foundCurrentElement);
                 succeded = succeded && currentElementSuccess;
+            }
+            catch
+            {
+                if (buffer != null)
+                {
+                    // Ensure the buffer is cleaned up if we fail.
+                    result = TCollectionPolicy.ToResult(buffer);
+                }
+                throw;
             }
             finally
             {
@@ -156,8 +178,17 @@ internal class CollectionConverter<TCollection, TCollectionPolicy, TBuffer, TEle
             {
                 computedPrefix[charsWritten + 1] = ']';
                 context.PushPrefix(computedPrefix[..(charsWritten + 2)]);
-                currentElementSuccess = _elementConverter.TryRead(ref context, typeof(TElement), options, out currentElement!, out foundCurrentElement);
+                currentElementSuccess = _elementConverter.TryRead(ref context, _elementType, options, out currentElement!, out foundCurrentElement);
                 succeded = succeded && currentElementSuccess;
+            }
+            catch
+            {
+                if (buffer != null)
+                {
+                    // Ensure the buffer is cleaned up if we fail.
+                    result = TCollectionPolicy.ToResult(buffer);
+                }
+                throw;
             }
             finally
             {
@@ -184,5 +215,45 @@ internal class CollectionConverter<TCollection, TCollectionPolicy, TBuffer, TEle
             }
             return succeded;
         }
+    }
+
+    private bool TryReadSingleValueCollection(ref FormDataReader context, out TCollection? result, ref bool found, ref TBuffer? buffer, ref bool succeded)
+    {
+        if (_elementConverter is ISingleValueConverter<TElement> singleValueConverter &&
+            singleValueConverter.CanConvertSingleValue() &&
+            context.TryGetValues(out var values))
+        {
+            found = true;
+            buffer = TCollectionPolicy.CreateBuffer();
+
+            for (var i = 0; i < values.Count; i++)
+            {
+                var value = values[i];
+                try
+                {
+                    if (!singleValueConverter.TryConvertValue(ref context, value!, out var elementValue))
+                    {
+                        succeded = false;
+                    }
+                    else
+                    {
+                        buffer = TCollectionPolicy.Add(ref buffer, elementValue);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    succeded = false;
+                    context.AddMappingError(ex, value);
+                }
+            };
+
+            result = TCollectionPolicy.ToResult(buffer);
+        }
+        else
+        {
+            result = default;
+        }
+
+        return succeded;
     }
 }

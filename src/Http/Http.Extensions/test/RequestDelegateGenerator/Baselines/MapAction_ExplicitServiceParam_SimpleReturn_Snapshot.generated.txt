@@ -36,6 +36,7 @@ namespace Microsoft.AspNetCore.Http.Generated
     using System.Text.Json.Serialization.Metadata;
     using System.Threading.Tasks;
     using System.IO;
+    using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Routing;
     using Microsoft.AspNetCore.Routing.Patterns;
     using Microsoft.AspNetCore.Builder;
@@ -54,9 +55,10 @@ namespace Microsoft.AspNetCore.Http.Generated
     %GENERATEDCODEATTRIBUTE%
     file static class GeneratedRouteBuilderExtensionsCore
     {
+        private static readonly JsonOptions FallbackJsonOptions = new();
         private static readonly string[] GetVerb = new[] { global::Microsoft.AspNetCore.Http.HttpMethods.Get };
 
-        [InterceptsLocation(@"TestMapActions.cs", 25, 13)]
+        [InterceptsLocation(@"TestMapActions.cs", 26, 13)]
         internal static RouteHandlerBuilder MapGet0(
             this IEndpointRouteBuilder endpoints,
             [StringSyntax("Route")] string pattern,
@@ -80,8 +82,10 @@ namespace Microsoft.AspNetCore.Http.Generated
                 EndpointFilterDelegate? filteredInvocation = null;
                 var serviceProvider = options.ServiceProvider ?? options.EndpointBuilder.ApplicationServices;
                 var logOrThrowExceptionHelper = new LogOrThrowExceptionHelper(serviceProvider, options);
-                var jsonOptions = serviceProvider?.GetService<IOptions<JsonOptions>>()?.Value ?? new JsonOptions();
-                var objectJsonTypeInfo = (JsonTypeInfo<object?>)jsonOptions.SerializerOptions.GetTypeInfo(typeof(object));
+                var jsonOptions = serviceProvider?.GetService<IOptions<JsonOptions>>()?.Value ?? FallbackJsonOptions;
+                var jsonSerializerOptions = jsonOptions.SerializerOptions;
+                jsonSerializerOptions.MakeReadOnly();
+                var objectJsonTypeInfo = (JsonTypeInfo<object?>)jsonSerializerOptions.GetTypeInfo(typeof(object));
 
                 if (options.EndpointBuilder.FilterFactories.Count > 0)
                 {
@@ -150,7 +154,7 @@ namespace Microsoft.AspNetCore.Http.Generated
                 createRequestDelegate);
         }
 
-        [InterceptsLocation(@"TestMapActions.cs", 26, 5)]
+        [InterceptsLocation(@"TestMapActions.cs", 27, 5)]
         internal static RouteHandlerBuilder MapGet1(
             this IEndpointRouteBuilder endpoints,
             [StringSyntax("Route")] string pattern,
@@ -174,8 +178,10 @@ namespace Microsoft.AspNetCore.Http.Generated
                 EndpointFilterDelegate? filteredInvocation = null;
                 var serviceProvider = options.ServiceProvider ?? options.EndpointBuilder.ApplicationServices;
                 var logOrThrowExceptionHelper = new LogOrThrowExceptionHelper(serviceProvider, options);
-                var jsonOptions = serviceProvider?.GetService<IOptions<JsonOptions>>()?.Value ?? new JsonOptions();
-                var objectJsonTypeInfo = (JsonTypeInfo<object?>)jsonOptions.SerializerOptions.GetTypeInfo(typeof(object));
+                var jsonOptions = serviceProvider?.GetService<IOptions<JsonOptions>>()?.Value ?? FallbackJsonOptions;
+                var jsonSerializerOptions = jsonOptions.SerializerOptions;
+                jsonSerializerOptions.MakeReadOnly();
+                var objectJsonTypeInfo = (JsonTypeInfo<object?>)jsonSerializerOptions.GetTypeInfo(typeof(object));
 
                 if (options.EndpointBuilder.FilterFactories.Count > 0)
                 {
@@ -244,7 +250,7 @@ namespace Microsoft.AspNetCore.Http.Generated
                 createRequestDelegate);
         }
 
-        [InterceptsLocation(@"TestMapActions.cs", 27, 5)]
+        [InterceptsLocation(@"TestMapActions.cs", 28, 5)]
         internal static RouteHandlerBuilder MapGet2(
             this IEndpointRouteBuilder endpoints,
             [StringSyntax("Route")] string pattern,
@@ -268,8 +274,10 @@ namespace Microsoft.AspNetCore.Http.Generated
                 EndpointFilterDelegate? filteredInvocation = null;
                 var serviceProvider = options.ServiceProvider ?? options.EndpointBuilder.ApplicationServices;
                 var logOrThrowExceptionHelper = new LogOrThrowExceptionHelper(serviceProvider, options);
-                var jsonOptions = serviceProvider?.GetService<IOptions<JsonOptions>>()?.Value ?? new JsonOptions();
-                var objectJsonTypeInfo = (JsonTypeInfo<object?>)jsonOptions.SerializerOptions.GetTypeInfo(typeof(object));
+                var jsonOptions = serviceProvider?.GetService<IOptions<JsonOptions>>()?.Value ?? FallbackJsonOptions;
+                var jsonSerializerOptions = jsonOptions.SerializerOptions;
+                jsonSerializerOptions.MakeReadOnly();
+                var objectJsonTypeInfo = (JsonTypeInfo<object?>)jsonSerializerOptions.GetTypeInfo(typeof(object));
 
                 if (options.EndpointBuilder.FilterFactories.Count > 0)
                 {

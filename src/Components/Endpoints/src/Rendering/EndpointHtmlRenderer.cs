@@ -17,7 +17,9 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using static Microsoft.AspNetCore.Internal.LinkerFlags;
 
 namespace Microsoft.AspNetCore.Components.Endpoints;
 
@@ -36,6 +38,7 @@ namespace Microsoft.AspNetCore.Components.Endpoints;
 internal partial class EndpointHtmlRenderer : StaticHtmlRenderer, IComponentPrerenderer
 {
     private readonly IServiceProvider _services;
+    private readonly RazorComponentsServiceOptions _options;
     private Task? _servicesInitializedTask;
     private HttpContext _httpContext = default!; // Always set at the start of an inbound call
 
@@ -49,7 +52,10 @@ internal partial class EndpointHtmlRenderer : StaticHtmlRenderer, IComponentPrer
         : base(serviceProvider, loggerFactory)
     {
         _services = serviceProvider;
+        _options = serviceProvider.GetRequiredService<IOptions<RazorComponentsServiceOptions>>().Value;
     }
+
+    internal HttpContext? HttpContext => _httpContext;
 
     private void SetHttpContext(HttpContext httpContext)
     {
@@ -65,7 +71,7 @@ internal partial class EndpointHtmlRenderer : StaticHtmlRenderer, IComponentPrer
 
     internal static async Task InitializeStandardComponentServicesAsync(
         HttpContext httpContext,
-        Type? componentType = null,
+        [DynamicallyAccessedMembers(Component)] Type? componentType = null,
         string? handler = null,
         IFormCollection? form = null)
     {
@@ -81,7 +87,7 @@ internal partial class EndpointHtmlRenderer : StaticHtmlRenderer, IComponentPrer
         if (handler != null && form != null)
         {
             httpContext.RequestServices.GetRequiredService<HttpContextFormDataProvider>()
-                .SetFormData(handler, new FormCollectionReadOnlyDictionary(form));
+                .SetFormData(handler, new FormCollectionReadOnlyDictionary(form), form.Files);
         }
 
         if (httpContext.RequestServices.GetService<AntiforgeryStateProvider>() is EndpointAntiforgeryStateProvider antiforgery)
@@ -99,6 +105,10 @@ internal partial class EndpointHtmlRenderer : StaticHtmlRenderer, IComponentPrer
             // Saving RouteData to avoid routing twice in Router component
             var routingStateProvider = httpContext.RequestServices.GetRequiredService<EndpointRoutingStateProvider>();
             routingStateProvider.RouteData = new RouteData(componentType, httpContext.GetRouteData().Values);
+            if (httpContext.GetEndpoint() is RouteEndpoint endpoint)
+            {
+                routingStateProvider.RouteData.Template = endpoint.RoutePattern.RawText;
+            }
         }
     }
 
@@ -125,10 +135,16 @@ internal partial class EndpointHtmlRenderer : StaticHtmlRenderer, IComponentPrer
 
     protected override Task UpdateDisplayAsync(in RenderBatch renderBatch)
     {
-        UpdateNamedEvents(in renderBatch);
+        UpdateNamedSubmitEvents(in renderBatch);
 
         if (_streamingUpdatesWriter is { } writer)
         {
+            // Important: SendBatchAsStreamingUpdate *must* be invoked synchronously
+            // before any 'await' in this method. That's enforced by the compiler
+            // (the method has an 'in' parameter) but even if it wasn't, it would still
+            // be important, because the RenderBatch buffers may be overwritten as soon
+            // as we yield the sync context. The only alternative would be to clone the
+            // batch deeply, or serialize it synchronously (e.g., via RenderBatchWriter).
             SendBatchAsStreamingUpdate(renderBatch, writer);
             return FlushThenComplete(writer, base.UpdateDisplayAsync(renderBatch));
         }

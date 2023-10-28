@@ -6,31 +6,31 @@ namespace Microsoft.AspNetCore.Components.Forms.Mapping;
 /// <summary>
 /// A context that tracks information about mapping a single value from form data.
 /// </summary>
-public class FormValueMappingContext
+public sealed class FormValueMappingContext
 {
     private bool _resultSet;
 
-    /// <summary>
-    /// Initializes a new instance of <see cref="FormValueMappingContext"/>.
-    /// </summary>
-    /// <param name="formName">The name of the form to map data from.</param>
-    /// <param name="valueType">The <see cref="Type"/> of the value to map.</param>
-    /// <param name="parameterName">The name of the parameter to map data to.</param>
-    public FormValueMappingContext(string formName, Type valueType, string parameterName)
+    internal FormValueMappingContext(string acceptMappingScopeName, string? acceptFormName, Type valueType, string parameterName)
     {
-        ArgumentNullException.ThrowIfNull(formName, nameof(formName));
+        ArgumentNullException.ThrowIfNull(acceptMappingScopeName, nameof(acceptMappingScopeName));
         ArgumentNullException.ThrowIfNull(valueType, nameof(valueType));
         ArgumentNullException.ThrowIfNull(parameterName, nameof(parameterName));
 
-        FormName = formName;
+        AcceptMappingScopeName = acceptMappingScopeName;
+        AcceptFormName = acceptFormName;
         ParameterName = parameterName;
         ValueType = valueType;
     }
 
     /// <summary>
-    /// Gets the name of the form to map data from.
+    /// Gets the name of <see cref="FormMappingScope"/> that is allowed to supply data in this context.
     /// </summary>
-    public string FormName { get; }
+    public string AcceptMappingScopeName { get; }
+
+    /// <summary>
+    /// If set, indicates that the mapping should only receive values if the incoming form matches this name. If null, the mapping should receive data from any form in the mapping scope.
+    /// </summary>
+    public string? AcceptFormName { get; }
 
     /// <summary>
     /// Gets the name of the parameter to map data to.
