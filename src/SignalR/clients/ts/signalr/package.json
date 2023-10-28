@@ -1,6 +1,6 @@
 {
   "name": "uniapp-signalr",
-  "version": "7.0.9",
+  "version": "7.0.12",
   "description": "ASP.NET Core SignalR Client, Add Uniapp miniprogram support by Jimifish",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "abort-controller": "^3.0.0",
+    "core-js": "^3.33.1",
     "eventsource": "^2.0.2",
     "fetch-cookie": "^2.0.3",
     "node-fetch": "^2.6.7",

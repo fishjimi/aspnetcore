@@ -15,6 +15,10 @@ import { UniWebSocket } from "./UniWebSocket";
 import { Arg, createLogger, getUserAgentHeader, Platform } from "./Utils";
 import { WebSocketTransport } from "./WebSocketTransport";
 
+// package.json 安装 polyfill,解决小程序不存在URL和URLSearchParams的问题
+import { default as URL } from 'core-js/actual/url';
+import { default as URLSearchParams } from 'core-js/actual/url-search-params';
+
 /** @private */
 const enum ConnectionState {
     Connecting = "Connecting",
