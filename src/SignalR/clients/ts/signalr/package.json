@@ -1,7 +1,7 @@
 {
-  "name": "@microsoft/signalr",
-  "version": "5.0.0-dev",
-  "description": "ASP.NET Core SignalR Client",
+  "name": "uniapp-signalr",
+  "version": "8.0.0",
+  "description": "ASP.NET Core SignalR Client, Add Uniapp miniprogram support by Jimifish",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "typings": "./dist/esm/index.d.ts",
@@ -23,19 +23,20 @@
     "get-version": "node -e \"const { name, version } = require('./package.json'); console.log(`${name};${version}`);\""
   },
   "keywords": [
+    "uniapp",
     "signalr",
     "aspnetcore"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dotnet/aspnetcore.git"
+    "url": "git+https://github.com/fishjimi/aspnetcore.git"
   },
-  "author": "Microsoft",
+  "author": "Jimifish",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dotnet/aspnetcore/issues"
+    "url": "https://github.com/fishjimi/aspnetcore/issues"
   },
-  "homepage": "https://github.com/dotnet/aspnetcore/tree/main/src/SignalR#readme",
+  "homepage": "https://github.com/fishjimi/aspnetcore/tree/main/src/SignalR#readme",
   "files": [
     "dist/**/*",
     "src/**/*"

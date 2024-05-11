@@ -17,7 +17,7 @@
         "skipLibCheck": true,
         "stripInternal": true,
         "strict": true,
-        "types": ["jest", "jasmine", "node"],
+        "types": ["jest", "node"],
         "lib": [ "es2019", "dom" ],
         "baseUrl": "."
     }
