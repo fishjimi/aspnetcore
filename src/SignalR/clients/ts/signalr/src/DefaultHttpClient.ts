@@ -7,6 +7,7 @@ import { HttpClient, HttpRequest, HttpResponse } from "./HttpClient";
 import { ILogger } from "./ILogger";
 import { Platform } from "./Utils";
 import { XhrHttpClient } from "./XhrHttpClient";
+import { UniHttpClient } from "./UniHttpClient";
 
 /** Default implementation of {@link @microsoft/signalr.HttpClient}. */
 export class DefaultHttpClient extends HttpClient {
@@ -16,7 +17,9 @@ export class DefaultHttpClient extends HttpClient {
     public constructor(logger: ILogger) {
         super();
 
-        if (typeof fetch !== "undefined" || Platform.isNode) {
+        if (Platform.isUniapp) {
+            this._httpClient = new UniHttpClient(logger);
+        } else if (typeof fetch !== "undefined" || Platform.isNode) {
             this._httpClient = new FetchHttpClient(logger);
         } else if (typeof XMLHttpRequest !== "undefined") {
             this._httpClient = new XhrHttpClient(logger);
