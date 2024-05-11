@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
-using Microsoft.AspNetCore.Testing;
+using Microsoft.AspNetCore.InternalTesting;
 using Microsoft.Extensions.Primitives;
 using Moq;
 using Xunit;
@@ -390,6 +390,18 @@ public class HttpResponseHeadersTests
         dictionary.Clear();
 
         Assert.Null(headers.ContentLength);
+    }
+
+    [Fact]
+    public void ContentLengthEnumerableWithoutOtherKnownHeader()
+    {
+        IHeaderDictionary headers = new HttpResponseHeaders();
+        headers["content-length"] = "1024";
+        Assert.Single(headers);
+        headers["unknown"] = "value";
+        Assert.Equal(2, headers.Count()); // NB: enumerable count, not property
+        headers["host"] = "myhost";
+        Assert.Equal(3, headers.Count()); // NB: enumerable count, not property
     }
 
     private static long ParseLong(string value)

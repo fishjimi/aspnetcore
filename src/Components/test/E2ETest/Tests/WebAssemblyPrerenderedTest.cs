@@ -23,7 +23,7 @@ public class WebAssemblyPrerenderedTest : ServerTestBase<AspNetSiteServerFixture
 
         var testTrimmedApps = typeof(ToggleExecutionModeServerFixture<>).Assembly
             .GetCustomAttributes<AssemblyMetadataAttribute>()
-            .First(m => m.Key == "Microsoft.AspNetCore.E2ETesting.TestTrimmedApps")
+            .First(m => m.Key == "Microsoft.AspNetCore.E2ETesting.TestTrimmedOrMultithreadingApps")
             .Value == "true";
 
         if (testTrimmedApps)
@@ -35,7 +35,7 @@ public class WebAssemblyPrerenderedTest : ServerTestBase<AspNetSiteServerFixture
     [Fact]
     public void CanPrerenderAndAddHeadOutletRootComponent()
     {
-        Navigate("/", noReload: true);
+        Navigate("/");
 
         // Verify that the title is updated during prerendering
         Browser.Equal("Current count: 0", () => Browser.Title);
@@ -56,7 +56,7 @@ public class WebAssemblyPrerenderedTest : ServerTestBase<AspNetSiteServerFixture
 
     private static string GetPublishedContentRoot(Assembly assembly)
     {
-        var contentRoot = Path.Combine(AppContext.BaseDirectory, "trimmed", assembly.GetName().Name);
+        var contentRoot = Path.Combine(AppContext.BaseDirectory, "trimmed-or-threading", assembly.GetName().Name);
 
         if (!Directory.Exists(contentRoot))
         {

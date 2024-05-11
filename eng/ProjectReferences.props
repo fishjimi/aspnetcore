@@ -5,6 +5,7 @@
 -->
 <Project>
   <ItemGroup>
+    <ProjectReferenceProvider Include="Microsoft.Extensions.Caching.Hybrid" ProjectPath="$(RepoRoot)src\Caching\Hybrid\src\Microsoft.Extensions.Caching.Hybrid.csproj" />
     <ProjectReferenceProvider Include="Microsoft.Extensions.Caching.SqlServer" ProjectPath="$(RepoRoot)src\Caching\SqlServer\src\Microsoft.Extensions.Caching.SqlServer.csproj" />
     <ProjectReferenceProvider Include="Microsoft.Extensions.Caching.StackExchangeRedis" ProjectPath="$(RepoRoot)src\Caching\StackExchangeRedis\src\Microsoft.Extensions.Caching.StackExchangeRedis.csproj" />
     <ProjectReferenceProvider Include="Microsoft.AspNetCore" ProjectPath="$(RepoRoot)src\DefaultBuilder\src\Microsoft.AspNetCore.csproj" />
@@ -162,7 +163,7 @@
     <ProjectReferenceProvider Include="Microsoft.Extensions.WebEncoders" ProjectPath="$(RepoRoot)src\WebEncoders\src\Microsoft.Extensions.WebEncoders.csproj" />
     <ProjectReferenceProvider Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" ProjectPath="$(RepoRoot)src\HealthChecks\Abstractions\src\Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.csproj" />
     <ProjectReferenceProvider Include="Microsoft.Extensions.Diagnostics.HealthChecks" ProjectPath="$(RepoRoot)src\HealthChecks\HealthChecks\src\Microsoft.Extensions.Diagnostics.HealthChecks.csproj" />
-    <ProjectReferenceProvider Include="Microsoft.AspNetCore.Testing" ProjectPath="$(RepoRoot)src\Testing\src\Microsoft.AspNetCore.Testing.csproj" />
+    <ProjectReferenceProvider Include="Microsoft.AspNetCore.InternalTesting" ProjectPath="$(RepoRoot)src\Testing\src\Microsoft.AspNetCore.InternalTesting.csproj" />
     <ProjectReferenceProvider Include="Microsoft.Extensions.Features" ProjectPath="$(RepoRoot)src\Extensions\Features\src\Microsoft.Extensions.Features.csproj" />
     <ProjectReferenceProvider Include="Microsoft.AspNetCore.Grpc.JsonTranscoding" ProjectPath="$(RepoRoot)src\Grpc\JsonTranscoding\src\Microsoft.AspNetCore.Grpc.JsonTranscoding\Microsoft.AspNetCore.Grpc.JsonTranscoding.csproj" />
     <ProjectReferenceProvider Include="Microsoft.AspNetCore.Grpc.Swagger" ProjectPath="$(RepoRoot)src\Grpc\JsonTranscoding\src\Microsoft.AspNetCore.Grpc.Swagger\Microsoft.AspNetCore.Grpc.Swagger.csproj" />

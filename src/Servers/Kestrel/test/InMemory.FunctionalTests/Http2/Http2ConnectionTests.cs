@@ -17,7 +17,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http2;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure;
-using Microsoft.AspNetCore.Testing;
+using Microsoft.AspNetCore.InternalTesting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
@@ -3401,6 +3401,7 @@ public class Http2ConnectionTests : Http2TestBase
         await StopConnectionAsync(expectedLastStreamId: 1, ignoreNonGoAwayFrames: false);
     }
 
+    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/53744")]
     [Fact]
     public async Task RST_STREAM_IncompleteRequest_AdditionalWindowUpdateFrame_ConnectionAborted()
     {

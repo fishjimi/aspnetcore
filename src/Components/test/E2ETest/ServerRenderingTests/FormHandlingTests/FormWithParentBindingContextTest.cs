@@ -8,6 +8,7 @@ using Components.TestServer.RazorComponents;
 using Microsoft.AspNetCore.Components.E2ETest.Infrastructure;
 using Microsoft.AspNetCore.Components.E2ETest.Infrastructure.ServerFixtures;
 using Microsoft.AspNetCore.E2ETesting;
+using Microsoft.AspNetCore.InternalTesting;
 using OpenQA.Selenium;
 using TestServer;
 using Xunit.Abstractions;
@@ -1250,6 +1251,7 @@ public class FormWithParentBindingContextTest : ServerTestBase<BasicTestAppServe
     }
 
     [Fact]
+    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/54447")]
     public void CanBindToFormWithFiles()
     {
         var profilePicture = TempFile.Create(_tempDirectory, "txt", "This is a profile picture.");
@@ -1335,6 +1337,180 @@ public class FormWithParentBindingContextTest : ServerTestBase<BasicTestAppServe
             Browser.Equal(expectedStringValue, () => stringInput.GetDomProperty("value"));
             Browser.Equal(expectedBoolValue.ToString(), () => boolInput.GetDomProperty("checked"));
         }
+    }
+
+    [Fact]
+    public void RadioButtonGetsResetAfterSubmittingEnhancedForm()
+    {
+        GoTo("forms/form-with-checkbox-and-radio-button");
+
+        Assert.False(Browser.Exists(By.Id("checkbox")).Selected);
+        Assert.False(Browser.Exists(By.Id("radio-button")).Selected);
+
+        Browser.Exists(By.Id("checkbox")).Click();
+        Browser.Exists(By.Id("radio-button")).Click();
+
+        Assert.True(Browser.Exists(By.Id("checkbox")).Selected);
+        Assert.True(Browser.Exists(By.Id("radio-button")).Selected);
+
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        Assert.False(Browser.Exists(By.Id("checkbox")).Selected);
+        Assert.False(Browser.Exists(By.Id("radio-button")).Selected);
+    }
+
+    [Fact]
+    public void SubmitButtonFormactionAttributeOverridesEnhancedFormAction()
+    {
+        GoTo("forms/form-submit-button-with-formaction");
+
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        Assert.EndsWith("/test-formaction", Browser.Url);
+        Browser.Equal("Formaction url", () => Browser.Exists(By.TagName("html")).Text);
+    }
+
+    [Fact]
+    public void SubmitButtonFormmethodAttributeOverridesEnhancedFormMethod()
+    {
+        GoTo("forms/form-with-method-and-submit-button-with-formmethod/get/post");
+        Browser.DoesNotExist(By.Id("submitted"));
+
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        Browser.Equal("Form submitted!", () => Browser.Exists(By.Id("submitted")).Text);
+    }
+
+    [Fact]
+    public void FormNotEnhancedWhenMethodEqualsDialog()
+    {
+        GoTo("forms/form-with-method-and-submit-button-with-formmethod/dialog");
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        // We are not checking staleness of the form element because the default behavior is to stay on the page.
+        // Check the warning
+        var logs = Browser.GetBrowserLogs(LogLevel.Warning);
+        Assert.True(logs.Count > 0);
+        Assert.Contains(logs, log => log.Message.Contains("A form cannot be enhanced when its method is \\\"dialog\\\"."));
+    }
+
+    [Fact]
+    public void FormNotEnhancedWhenFormmethodEqualsDialog()
+    {
+        GoTo("forms/form-with-method-and-submit-button-with-formmethod/get/dialog");
+
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        // We are not checking staleness of the form element because the default behavior is to stay on the page.
+        // Check the warning
+        var logs = Browser.GetBrowserLogs(LogLevel.Warning);
+        Assert.True(logs.Count > 0);
+        Assert.Contains(logs, log => log.Message.Contains("A form cannot be enhanced when its method is \\\"dialog\\\"."));
+    }
+
+    [Fact]
+    public void FormNotEnhancedWhenTargetIsNotEqualSelf()
+    {
+        GoTo("forms/form-with-target-and-submit-button-with-formtarget/_blank");
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        // We are not checking staleness of form element because the default behavior is to open a new browser tab and the form remains on the original tab.
+        // Check the warning
+        var logs = Browser.GetBrowserLogs(LogLevel.Warning);
+        Assert.True(logs.Count > 0);
+        Assert.Contains(logs, log => log.Message.Contains("A form cannot be enhanced when its target is different from the default value \\\"_self\\\"."));
+    }
+
+    [Fact]
+    public void FormNotEnhancedWhenFormtargetIsNotEqualSelf()
+    {
+        GoTo("forms/form-with-target-and-submit-button-with-formtarget/_self/_blank");
+
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        // We are not checking staleness of form element because the default behavior is to open a new browser tab and the form remains on the original tab.
+        // Check the warning
+        var logs = Browser.GetBrowserLogs(LogLevel.Warning);
+        Assert.True(logs.Count > 0);
+        Assert.Contains(logs, log => log.Message.Contains("A form cannot be enhanced when its target is different from the default value \\\"_self\\\"."));
+    }
+
+    [Fact]
+    public void FormEnctypeEqualsDefaultWhenNotSpecified()
+    {
+        GoTo("forms/form-with-enctype-and-submit-button-with-formenctype");
+
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        Browser.Equal("application/x-www-form-urlencoded", () => Browser.Exists(By.Id("content-type")).Text);
+    }
+
+    [Fact]
+    public void FormEnctypeSetsContentTypeHeader()
+    {
+        GoTo("forms/form-with-enctype-and-submit-button-with-formenctype?enctype=multipart/form-data");
+
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        Browser.Contains("multipart/form-data", () => Browser.Exists(By.Id("content-type")).Text);
+    }
+
+    [Fact]
+    public void SubmitButtonFormenctypeAttributeOverridesEnhancedFormEnctype()
+    {
+        GoTo("forms/form-with-enctype-and-submit-button-with-formenctype?enctype=text/plain&formenctype=application/x-www-form-urlencoded");
+
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        Browser.Equal("application/x-www-form-urlencoded", () => Browser.Exists(By.Id("content-type")).Text);
+    }
+
+    [Fact]
+    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/54757")]
+    public void EnhancedFormThatCallsNavigationManagerRefreshDoesNotPushHistoryEntry()
+    {
+        Navigate("about:blank");
+
+        var startUrl = Browser.Url;
+        GoTo("forms/form-that-calls-navigation-manager-refresh");
+        var guid = Browser.Exists(By.Id("guid")).Text;
+
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        // Checking that the page was refreshed.
+        // The redirect request method is GET.
+        // Providing a Guid to check that it is not the initial GET request for the page
+        Browser.NotEqual(guid, () => Browser.Exists(By.Id("guid")).Text);
+        Browser.Equal("GET", () => Browser.Exists(By.Id("method")).Text);
+
+        // Checking that the history entry was not pushed
+        Browser.Navigate().Back();
+        Browser.Equal(startUrl, () => Browser.Url);
+    }
+
+    [Fact]
+    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/54757")]
+    public void EnhancedFormThatCallsNavigationManagerRefreshDoesNotPushHistoryEntry_Streaming()
+    {
+        Navigate("about:blank");
+
+        var startUrl = Browser.Url;
+        GoTo("forms/form-that-calls-navigation-manager-refresh-streaming");
+
+        // Submit the form
+        Browser.FindElement(By.Id("some-text")).SendKeys("test string");
+        Browser.Equal("test string", () => Browser.FindElement(By.Id("some-text")).GetAttribute("value"));
+        Browser.Exists(By.Id("submit-button")).Click();
+
+        // Wait for the async/streaming process to complete. We know this happened
+        // if the loading indicator says we're done, and the textbox was cleared
+        // due to the refresh
+        Browser.Equal("False", () => Browser.FindElement(By.Id("loading-indicator")).Text);
+        Browser.Equal("", () => Browser.FindElement(By.Id("some-text")).GetAttribute("value"));
+
+        // Checking that the history entry was not pushed
+        Browser.Navigate().Back();
+        Browser.Equal(startUrl, () => Browser.Url);
     }
 
     // Can't just use GetAttribute or GetDomAttribute because they both auto-resolve it

@@ -13,17 +13,16 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Internal;
+using Microsoft.AspNetCore.InternalTesting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
-using Microsoft.AspNetCore.Testing;
+using Microsoft.AspNetCore.Server.Kestrel.Transport.Quic;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using Microsoft.Extensions.Primitives;
-using Xunit;
 
 namespace Interop.FunctionalTests.Http3;
 
@@ -313,6 +312,7 @@ public class Http3RequestTests : LoggedTest
         }
     }
 
+    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/52573")]
     [ConditionalTheory]
     [MsQuicSupported]
     [InlineData(HttpProtocols.Http3)]
@@ -358,6 +358,7 @@ public class Http3RequestTests : LoggedTest
             Assert.NotNull(contentType1);
             Assert.NotNull(authority1);
 
+            // We're testing `Same`, specifically, since we're trying to detect cache misses
             Assert.Same(contentType1, contentType2);
             Assert.Same(authority1, authority2);
 
@@ -755,7 +756,6 @@ public class Http3RequestTests : LoggedTest
     }
 
     [ConditionalFact]
-    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/43374")]
     [MsQuicSupported]
     public async Task GET_ConnectionsMakingMultipleRequests_AllSuccess()
     {
@@ -2028,6 +2028,34 @@ public class Http3RequestTests : LoggedTest
 
             Assert.DoesNotContain(TestSink.Writes, m => m.Message.Contains("Some connections failed to close gracefully during server shutdown."));
         }
+    }
+
+    [ConditionalFact]
+    [MsQuicSupported]
+    public async Task ServerReset_InvalidErrorCode()
+    {
+        var ranHandler = false;
+        var hostBuilder = CreateHostBuilder(context =>
+        {
+            ranHandler = true;
+            // Can't test a too-large value since it's bigger than int
+            //Assert.Throws<ArgumentOutOfRangeException>(() => context.Features.Get<IHttpResetFeature>().Reset(-1)); // Invalid negative value
+            context.Features.Get<IHttpResetFeature>().Reset(-1);
+            return Task.CompletedTask;
+        });
+
+        using var host = await hostBuilder.StartAsync().DefaultTimeout();
+        using var client = HttpHelpers.CreateClient();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, $"https://127.0.0.1:{host.GetPort()}/");
+        request.Version = GetProtocol(HttpProtocols.Http3);
+        request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+        var response = await client.SendAsync(request, CancellationToken.None).DefaultTimeout();
+        await host.StopAsync().DefaultTimeout();
+
+        Assert.True(ranHandler);
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
     private IHostBuilder CreateHostBuilder(RequestDelegate requestDelegate, HttpProtocols? protocol = null, Action<KestrelServerOptions> configureKestrel = null)

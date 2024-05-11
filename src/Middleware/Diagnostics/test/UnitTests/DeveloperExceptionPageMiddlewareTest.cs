@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.AspNetCore.Testing;
+using Microsoft.AspNetCore.InternalTesting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.Diagnostics.Metrics.Testing;
@@ -297,6 +297,41 @@ public class DeveloperExceptionPageMiddlewareTest : LoggedTest
         Assert.Equal("utf-8", response.Content.Headers.ContentType.CharSet);
         Assert.Contains("Test exception", responseText);
         Assert.DoesNotContain("<html", responseText);
+    }
+
+    [Fact]
+    public async Task ErrorPageShowsEndpointMetadata()
+    {
+        // Arrange
+        using var host = new HostBuilder()
+            .ConfigureWebHost(webHostBuilder =>
+            {
+                webHostBuilder
+                .UseTestServer()
+                .Configure(app =>
+                {
+                    app.UseDeveloperExceptionPage();
+                    app.Run(httpContext =>
+                    {
+                        var endpoint = new Endpoint(null, new EndpointMetadataCollection("my metadata"), null);
+                        httpContext.SetEndpoint(endpoint);
+                        throw new Exception("Test exception");
+                    });
+                });
+            }).Build();
+
+        await host.StartAsync();
+
+        var server = host.GetTestServer();
+
+        // Act
+        var client = server.CreateClient();
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/html"));
+        var response = await client.GetAsync("/path");
+
+        // Assert
+        var responseText = await response.Content.ReadAsStringAsync();
+        Assert.Contains("my metadata", responseText);
     }
 
     [Fact]

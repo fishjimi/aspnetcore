@@ -3,7 +3,7 @@ registries:
   dev.azure.com:
     token: ${{secrets.DEPENDABOT_NPM_TOKEN}}
     type: npm-registry
-    url: https://pkgs.dev.azure.com/
+    url: https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public-npm/npm/registry/
 
 updates:
   - package-ecosystem: npm
@@ -26,6 +26,9 @@ updates:
     commit-message:
       prefix: "[main] "
       include: scope
+    ignore:
+      # Ignore updates to the update-dotnet-sdk action
+      - dependency-name: "martincostello*"
     labels:
       - area-infrastructure
 
@@ -42,6 +45,9 @@ updates:
     commit-message:
       prefix: "[main] "
       include: scope
+    ignore:
+      # Don't auto-update the Node-Externals submodule
+      - dependency-name: "src/submodules/Node-Externals"
     labels:
       - area-infrastructure
 
@@ -78,8 +84,8 @@ updates:
     allow:
       - dependency-type: "all"
     commit-message:
-      prefix: "[release/7.0] "
+      prefix: "[release/8.0] "
       include: scope
     labels:
       - area-infrastructure
-    target-branch: "release/7.0"
+    target-branch: "release/8.0"

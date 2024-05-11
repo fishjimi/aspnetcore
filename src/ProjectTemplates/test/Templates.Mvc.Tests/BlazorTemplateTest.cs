@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.AspNetCore.Testing;
+using Microsoft.AspNetCore.InternalTesting;
 using Templates.Test.Helpers;
 using Xunit.Sdk;
 
@@ -16,7 +16,7 @@ public class BlazorTemplateTest : LoggedTest
 
     public ProjectFactoryFixture ProjectFactory { get; set; }
 
-    public static TheoryData<string[]> ArgsData() =>
+    public static TheoryData<object[]> ArgsData() =>
     [
         [],
         [ArgConstants.UseProgramMain],
@@ -69,7 +69,7 @@ public class BlazorTemplateTest : LoggedTest
         if (!args.Contains(ArgConstants.IndividualAuth))
         {
             Assert.DoesNotContain("Microsoft.EntityFrameworkCore.Tools", projectFileContents);
-            Assert.DoesNotContain(".db", projectFileContents);
+            Assert.DoesNotContain("app.db", projectFileContents);
         }
         else
         {
@@ -77,11 +77,11 @@ public class BlazorTemplateTest : LoggedTest
 
             if (args.Contains(ArgConstants.UseLocalDb))
             {
-                Assert.DoesNotContain(".db", projectFileContents);
+                Assert.DoesNotContain("app.db", projectFileContents);
             }
             else
             {
-                Assert.Contains(".db", projectFileContents);
+                Assert.Contains("app.db", projectFileContents);
             }
         }
 
@@ -194,7 +194,7 @@ public class BlazorTemplateTest : LoggedTest
     {
         var appRazorPath = Path.Combine(project.TemplateOutputDir, "Components", "App.razor");
         var appRazorText = await File.ReadAllTextAsync(appRazorPath);
-        appRazorText = appRazorText.Replace("IComponentRenderMode?", "IComponentRenderMode").Replace("? null", "? null!");
+        appRazorText = appRazorText.Replace("IComponentRenderMode?", "IComponentRenderMode").Replace(": null", ": null!");
         await File.WriteAllTextAsync(appRazorPath, appRazorText);
     }
 

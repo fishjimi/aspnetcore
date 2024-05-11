@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Internal;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Quic.Internal;
-using Microsoft.AspNetCore.Testing;
+using Microsoft.AspNetCore.InternalTesting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
@@ -629,7 +629,6 @@ public class QuicConnectionContextTests : TestApplicationErrorLoggerLoggedTest
 
     [ConditionalFact]
     [MsQuicSupported]
-    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/38998")]
     public async Task PersistentState_StreamsReused_StatePersisted()
     {
         using var httpEventSource = new HttpEventSourceListener(LoggerFactory);
@@ -705,6 +704,33 @@ public class QuicConnectionContextTests : TestApplicationErrorLoggerLoggedTest
         Assert.Equal(1, quicConnectionContext.StreamPool.Count);
 
         Assert.Equal(true, state);
+    }
+
+    [ConditionalTheory]
+    [MsQuicSupported]
+    [InlineData(-1L)] // Too small
+    [InlineData(1L << 62)] // Too big
+    public async Task IProtocolErrorFeature_InvalidErrorCode(long errorCode)
+    {
+        // Arrange
+        await using var connectionListener = await QuicTestHelpers.CreateConnectionListenerFactory(LoggerFactory);
+
+        var options = QuicTestHelpers.CreateClientConnectionOptions(connectionListener.EndPoint);
+        await using var clientConnection = await QuicConnection.ConnectAsync(options);
+
+        await using var serverConnection = await connectionListener.AcceptAndAddFeatureAsync().DefaultTimeout();
+
+        // Act
+        var clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+        await clientStream.WriteAsync(TestData).DefaultTimeout();
+
+        var serverStream = await serverConnection.AcceptAsync().DefaultTimeout();
+
+        var protocolErrorCodeFeature = serverConnection.Features.Get<IProtocolErrorCodeFeature>();
+
+        // Assert
+        Assert.IsType<QuicConnectionContext>(protocolErrorCodeFeature);
+        Assert.Throws<ArgumentOutOfRangeException>(() => protocolErrorCodeFeature.Error = errorCode);
     }
 
     private record RequestState(

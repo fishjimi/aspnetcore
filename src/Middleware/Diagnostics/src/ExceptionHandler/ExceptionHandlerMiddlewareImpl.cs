@@ -144,13 +144,13 @@ internal sealed class ExceptionHandlerMiddlewareImpl
             context.Request.Path = _options.ExceptionHandlingPath;
         }
         var oldScope = _options.CreateScopeForErrors ? context.RequestServices : null;
-        using var scope = _options.CreateScopeForErrors ? context.RequestServices.GetRequiredService<IServiceScopeFactory>().CreateScope() : null;
+        await using AsyncServiceScope? scope = _options.CreateScopeForErrors ? context.RequestServices.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope() : null;
 
         try
         {
-            if (scope != null)
+            if (scope.HasValue)
             {
-                context.RequestServices = scope.ServiceProvider;
+                context.RequestServices = scope.Value.ServiceProvider;
             }
 
             var exceptionHandlerFeature = new ExceptionHandlerFeature()
@@ -247,12 +247,7 @@ internal sealed class ExceptionHandlerMiddlewareImpl
 
         // An endpoint may have already been set. Since we're going to re-invoke the middleware pipeline we need to reset
         // the endpoint and route values to ensure things are re-calculated.
-        context.SetEndpoint(endpoint: null);
-        var routeValuesFeature = context.Features.Get<IRouteValuesFeature>();
-        if (routeValuesFeature != null)
-        {
-            routeValuesFeature.RouteValues = null!;
-        }
+        HttpExtensions.ClearEndpoint(context);
     }
 
     private static Task ClearCacheHeaders(object state)

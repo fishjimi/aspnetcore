@@ -16,6 +16,7 @@
     <Compile Include="$(SharedSourceRoot)StackTrace\**\*.cs" />
     <Compile Include="$(SharedSourceRoot)ErrorPage\**\*.cs" />
     <Compile Include="$(SharedSourceRoot)StaticWebAssets\**\*.cs" LinkBase="StaticWebAssets" />
+    <Compile Include="$(SharedSourceRoot)Metrics\MetricsExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,6 +35,7 @@
     <Reference Include="Microsoft.Extensions.Options" />
 
     <Compile Include="$(SharedSourceRoot)TypeNameHelper\*.cs" />
+    <Compile Include="$(SharedSourceRoot)HttpExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

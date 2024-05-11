@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.AspNetCore.InternalTesting;
 
 namespace Microsoft.AspNetCore.Components;
 
@@ -797,12 +798,14 @@ public class NavigationManagerTest
         }
     }
 
+    [QuarantinedTest("https://github.com/dotnet/aspnetcore/issues/52407")]
     [Fact]
     public async Task LocationChangingHandlers_CannotCancelTheNavigationAsynchronously_UntilReturning()
     {
         // Arrange
         var baseUri = "scheme://host/";
         var navigationManager = new TestNavigationManager(baseUri);
+        var blockPreventNavigationTcs = new TaskCompletionSource();
         var navigationPreventedTcs = new TaskCompletionSource();
         var completeHandlerTcs = new TaskCompletionSource();
         LocationChangingContext currentContext = null;
@@ -812,10 +815,14 @@ public class NavigationManagerTest
         // Act/Assert
         var navigation1 = navigationManager.RunNotifyLocationChangingAsync($"{baseUri}/subdir1", null, false);
 
+        // Unblock the location changing handler to let it cancel the navigation, now that we know the
+        // navigation wasn't canceled synchronously
+        blockPreventNavigationTcs.SetResult();
+
         // Wait for the navigation to be prevented asynchronously
         await navigationPreventedTcs.Task.WaitAsync(Timeout);
 
-        // Assert that we have prevented the navigation but the cancellation token has requested cancellation
+        // Assert that we have prevented the navigation but the cancellation token has not requested cancellation
         Assert.True(currentContext.DidPreventNavigation);
         Assert.False(currentContext.CancellationToken.IsCancellationRequested);
 
@@ -833,7 +840,7 @@ public class NavigationManagerTest
             currentContext = context;
 
             // Force the navigation to be prevented asynchronously
-            await Task.Yield();
+            await blockPreventNavigationTcs.Task;
 
             context.PreventNavigation();
             navigationPreventedTcs.SetResult();

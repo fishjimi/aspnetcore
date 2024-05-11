@@ -73,7 +73,7 @@ internal static partial class LoggingExtensions
     [LoggerMessage(11, LogLevel.Debug, "Using managed symmetric algorithm '{FullName}'.", EventName = "UsingManagedSymmetricAlgorithm")]
     public static partial void UsingManagedSymmetricAlgorithm(this ILogger logger, string fullName);
 
-    [LoggerMessage(12, LogLevel.Warning, "Key {KeyId:B} is ineligible to be the default key because its {MethodName} method failed.", EventName = "KeyIsIneligibleToBeTheDefaultKeyBecauseItsMethodFailed")]
+    [LoggerMessage(12, LogLevel.Warning, "Key {KeyId:B} is ineligible to be the default key because its {MethodName} method failed after the maximum number of retries.", EventName = "KeyIsIneligibleToBeTheDefaultKeyBecauseItsMethodFailed")]
     public static partial void KeyIsIneligibleToBeTheDefaultKeyBecauseItsMethodFailed(this ILogger logger, Guid keyId, string methodName, Exception exception);
 
     [LoggerMessage(13, LogLevel.Debug, "Considering key {KeyId:B} with expiration date {ExpirationDate:u} as default key.", EventName = "ConsideringKeyWithExpirationDateAsDefaultKey")]
@@ -237,4 +237,22 @@ internal static partial class LoggingExtensions
 
     [LoggerMessage(60, LogLevel.Warning, "Storing keys in a directory '{path}' that may not be persisted outside of the container. Protected data will be unavailable when container is destroyed. For more information go to https://aka.ms/aspnet/dataprotectionwarning", EventName = "UsingEphemeralFileSystemLocationInContainer")]
     public static partial void UsingEphemeralFileSystemLocationInContainer(this ILogger logger, string path);
+
+    [LoggerMessage(61, LogLevel.Trace, "Ignoring configuration '{PropertyName}' for options instance '{OptionsName}'", EventName = "IgnoringReadOnlyConfigurationForNonDefaultOptions")]
+    public static partial void IgnoringReadOnlyConfigurationForNonDefaultOptions(this ILogger logger, string propertyName, string? optionsName);
+
+    [LoggerMessage(62, LogLevel.Information, "Enabling read-only key access with repository directory '{Path}'", EventName = "UsingReadOnlyKeyConfiguration")]
+    public static partial void UsingReadOnlyKeyConfiguration(this ILogger logger, string path);
+
+    [LoggerMessage(63, LogLevel.Debug, "Not enabling read-only key access because an XML repository has been specified", EventName = "NotUsingReadOnlyKeyConfigurationBecauseOfRepository")]
+    public static partial void NotUsingReadOnlyKeyConfigurationBecauseOfRepository(this ILogger logger);
+
+    [LoggerMessage(64, LogLevel.Debug, "Not enabling read-only key access because an XML encryptor has been specified", EventName = "NotUsingReadOnlyKeyConfigurationBecauseOfEncryptor")]
+    public static partial void NotUsingReadOnlyKeyConfigurationBecauseOfEncryptor(this ILogger logger);
+
+    [LoggerMessage(72, LogLevel.Error, "The key ring's default data protection key {KeyId:B} has been revoked.", EventName = "KeyRingDefaultKeyIsRevoked")]
+    public static partial void KeyRingDefaultKeyIsRevoked(this ILogger logger, Guid keyId);
+
+    [LoggerMessage(73, LogLevel.Debug, "Key {KeyId:B} method {MethodName} failed. Retrying.", EventName = "RetryingMethodOfKeyAfterFailure")]
+    public static partial void RetryingMethodOfKeyAfterFailure(this ILogger logger, Guid keyId, string methodName, Exception exception);
 }

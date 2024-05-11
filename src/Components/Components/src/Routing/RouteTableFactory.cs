@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using static Microsoft.AspNetCore.Internal.LinkerFlags;
+using Microsoft.AspNetCore.Routing.Constraints;
 
 namespace Microsoft.AspNetCore.Components;
 
@@ -72,7 +73,9 @@ internal class RouteTableFactory
         {
             foreach (var type in assembly.ExportedTypes)
             {
-                if (typeof(IComponent).IsAssignableFrom(type) && type.IsDefined(typeof(RouteAttribute)))
+                if (typeof(IComponent).IsAssignableFrom(type)
+                    && type.IsDefined(typeof(RouteAttribute))
+                    && !type.IsDefined(typeof(ExcludeFromInteractiveRoutingAttribute)))
                 {
                     routeableComponents.Add(type);
                 }
@@ -112,9 +115,14 @@ internal class RouteTableFactory
     [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Application code does not get trimmed, and the framework does not define routable components.")]
     internal static RouteTable Create(Dictionary<Type, string[]> templatesByHandler, IServiceProvider serviceProvider)
     {
+        var routeOptions = Options.Create(new RouteOptions());
+        if (!OperatingSystem.IsBrowser() || RegexConstraintSupport.IsEnabled)
+        {
+            routeOptions.Value.SetParameterPolicy("regex", typeof(RegexInlineRouteConstraint));
+        }
         var builder = new TreeRouteBuilder(
             serviceProvider.GetRequiredService<ILoggerFactory>(),
-            new DefaultInlineConstraintResolver(Options.Create(new RouteOptions()), serviceProvider));
+            new DefaultInlineConstraintResolver(routeOptions, serviceProvider));
 
         foreach (var (type, templates) in templatesByHandler)
         {

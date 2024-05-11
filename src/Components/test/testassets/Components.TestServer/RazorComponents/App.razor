@@ -18,23 +18,41 @@
     <script src="_framework/blazor.web.js" autostart="false" suppress-error="BL9992"></script>
     <script src="_content/TestContentPackage/counterInterop.js"></script>
     <script>
-        const enableClassicInitializers = sessionStorage.getItem('enable-classic-initializers') === 'true';
-        const suppressEnhancedNavigation = sessionStorage.getItem('suppress-enhanced-navigation') === 'true';
-        const blockLoadBootResource = sessionStorage.getItem('block-load-boot-resource') === 'true';
-        const useLongWebAssemblyTimeout = sessionStorage.getItem('use-long-auto-timeout') === 'true';
-        sessionStorage.removeItem('suppress-enhanced-navigation');
-        sessionStorage.removeItem('block-load-boot-resource');
-        sessionStorage.removeItem('use-long-auto-timeout');
-        sessionStorage.removeItem('enable-classic-initializers');
-
-        let loadBootResourceUnblocked = null;
-        if (blockLoadBootResource) {
-            loadBootResourceUnblocked = new Promise(resolve => {
-                window.unblockLoadBootResource = resolve;
-            });
+        function appendHiddenParagraph(id) {
+            const paragraph = document.createElement('p');
+            paragraph.id = id;
+            paragraph.style = 'display: none;';
+            document.body.appendChild(paragraph);
         }
 
         function callBlazorStart() {
+            const enableClassicInitializers = sessionStorage.getItem('enable-classic-initializers') === 'true';
+            const suppressEnhancedNavigation = sessionStorage.getItem('suppress-enhanced-navigation') === 'true';
+            const blockLoadBootResource = sessionStorage.getItem('block-load-boot-resource') === 'true';
+            sessionStorage.removeItem('suppress-enhanced-navigation');
+            sessionStorage.removeItem('block-load-boot-resource');
+            sessionStorage.removeItem('enable-classic-initializers');
+
+            let loadBootResourceUnblocked = null;
+            if (blockLoadBootResource) {
+                loadBootResourceUnblocked = new Promise(resolve => {
+                    window.unblockLoadBootResource = () => {
+                        var origSetItem = localStorage.setItem;
+                        localStorage.setItem = function (key) {
+                            origSetItem.apply(this, arguments);
+                            if (key.startsWith('blazor-resource-hash:')) {
+                                localStorage.setItem = origSetItem;
+                                appendHiddenParagraph('unblocked-wasm');
+                            }
+                        };
+                        resolve();
+                    }
+                });
+            }
+
+            let maxParallelResourceDownloadCount = 0;
+            let currentParallelResourceDownloadCount = 0;
+
             Blazor.start({
                 ssr: {
                     disableDomPreservation: suppressEnhancedNavigation,
@@ -55,25 +73,22 @@
                                 // The following allows us to arbitrarily delay the loading of WebAssembly resources.
                                 // This is useful for guaranteeing that auto mode components will fall back on
                                 // using Blazor server.
+                                currentParallelResourceDownloadCount++;
                                 return fetch(`${document.baseURI}WasmMinimal/_framework/${name}?`, {
                                     method: "GET",
                                 }).then(async (response) => {
+                                    if (currentParallelResourceDownloadCount > maxParallelResourceDownloadCount) {
+                                        maxParallelResourceDownloadCount = currentParallelResourceDownloadCount;
+                                        window['__aspnetcore__testing__max__parallel__resource__download__count'] = maxParallelResourceDownloadCount;
+                                    }
+                                    currentParallelResourceDownloadCount--;
                                     await loadBootResourceUnblocked;
                                     return response;
                                 });
                         }
                     },
                 },
-            }).then(() => {
-                if (useLongWebAssemblyTimeout) {
-                    Blazor._internal.loadWebAssemblyQuicklyTimeout = 10000000;
-                }
-            }).then(() => {
-                const startedParagraph = document.createElement('p');
-                startedParagraph.id = 'blazor-started';
-                startedParagraph.style = 'display: none;';
-                document.body.appendChild(startedParagraph);
-            });
+            }).then(() => appendHiddenParagraph('blazor-started'));
         }
 
         if (location.search.indexOf('suppress-autostart') < 0) {
