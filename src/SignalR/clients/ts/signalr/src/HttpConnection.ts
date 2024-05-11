@@ -15,9 +15,6 @@ import { UniWebSocket } from "./UniWebSocket";
 import { Arg, createLogger, getUserAgentHeader, Platform } from "./Utils";
 import { WebSocketTransport } from "./WebSocketTransport";
 
-// package.json 安装 polyfill,解决小程序不存在URL和URLSearchParams的问题
-import { default as URL } from 'core-js/actual/url';
-import { default as URLSearchParams } from 'core-js/actual/url-search-params';
 
 /** @private */
 const enum ConnectionState {
@@ -61,7 +58,7 @@ export class HttpConnection implements IConnection {
     private transport?: ITransport;
     private _startInternalPromise?: Promise<void>;
     private _stopPromise?: Promise<void>;
-    private _stopPromiseResolver: (value?: PromiseLike<void>) => void = () => {};
+    private _stopPromiseResolver: (value?: PromiseLike<void>) => void = () => { };
     private _stopError?: Error;
     private _accessTokenFactory?: () => string | Promise<string>;
     private _sendQueue?: TransportSendQueue;
@@ -315,7 +312,7 @@ export class HttpConnection implements IConnection {
     }
 
     private async _getNegotiationResponse(url: string): Promise<INegotiateResponse> {
-        const headers: {[k: string]: string} = {};
+        const headers: { [k: string]: string } = {};
         const [name, value] = getUserAgentHeader();
         headers[name] = value;
 
@@ -587,30 +584,29 @@ export class HttpConnection implements IConnection {
     }
 
     private _resolveNegotiateUrl(url: string): string {
-        const negotiateUrl = new URL(url);
-
-        if (negotiateUrl.pathname.endsWith('/')) {
-            negotiateUrl.pathname += "negotiate";
-        } else {
-            negotiateUrl.pathname += "/negotiate";
+        const index = url.indexOf("?");
+        let negotiateUrl = url.substring(0, index === -1 ? url.length : index);
+        if (negotiateUrl[negotiateUrl.length - 1] !== "/") {
+            negotiateUrl += "/";
         }
-        const searchParams = new URLSearchParams(negotiateUrl.searchParams);
+        negotiateUrl += "negotiate";
+        negotiateUrl += index === -1 ? "" : url.substring(index);
 
-        if (!searchParams.has("negotiateVersion")) {
-            searchParams.append("negotiateVersion", this._negotiateVersion.toString());
+        if (negotiateUrl.indexOf("negotiateVersion") === -1) {
+            negotiateUrl += index === -1 ? "?" : "&";
+            negotiateUrl += "negotiateVersion=" + this._negotiateVersion;
         }
 
-        if (searchParams.has("useStatefulReconnect")) {
-            if (searchParams.get("useStatefulReconnect") === "true") {
+        if (!(negotiateUrl.indexOf("useAck") === -1)) {
+            if (negotiateUrl.indexOf("useAck=true") > -1) {
                 this._options._useStatefulReconnect = true;
             }
         } else if (this._options._useStatefulReconnect === true) {
-            searchParams.append("useStatefulReconnect", "true");
+            negotiateUrl += index === -1 ? "?" : "&";
+            negotiateUrl += "useAck=true";
         }
 
-        negotiateUrl.search = searchParams.toString();
-
-        return negotiateUrl.toString();
+        return negotiateUrl;
     }
 }
 
@@ -648,8 +644,8 @@ export class TransportSendQueue {
     }
 
     private _bufferData(data: string | ArrayBuffer): void {
-        if (this._buffer.length && typeof(this._buffer[0]) !== typeof(data)) {
-            throw new Error(`Expected data to be of type ${typeof(this._buffer)} but was of type ${typeof(data)}`);
+        if (this._buffer.length && typeof (this._buffer[0]) !== typeof (data)) {
+            throw new Error(`Expected data to be of type ${typeof (this._buffer)} but was of type ${typeof (data)}`);
         }
 
         this._buffer.push(data);
@@ -673,7 +669,7 @@ export class TransportSendQueue {
             const transportResult = this._transportResult!;
             this._transportResult = undefined;
 
-            const data = typeof(this._buffer[0]) === "string" ?
+            const data = typeof (this._buffer[0]) === "string" ?
                 this._buffer.join("") :
                 TransportSendQueue._concatBuffers(this._buffer);
 

@@ -71,12 +71,12 @@ export class UniWebSocket implements WebSocket {
         throw new Error("Method not implemented.");
     }
 
-    public readonly CLOSED: number = 1;
-    public static readonly CLOSED: number = 1;
-    public readonly CLOSING: number = 2;
+    public readonly CLOSED = 3;
+    public static readonly CLOSED: number = 3;
+    public readonly CLOSING = 2;
     public static readonly CLOSING: number = 2;
-    public readonly CONNECTING: number = 3;
-    public static readonly CONNECTING: number = 3;
-    public readonly OPEN: number = 4;
-    public static readonly OPEN: number = 4;
+    public readonly CONNECTING = 0;
+    public static readonly CONNECTING: number = 0;
+    public readonly OPEN = 1;
+    public static readonly OPEN: number = 1;
 }
