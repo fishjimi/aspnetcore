@@ -23,6 +23,7 @@
     "get-version": "node -e \"const { name, version } = require('./package.json'); console.log(`${name};${version}`);\""
   },
   "keywords": [
+    "uniapp",
     "signalr",
     "aspnetcore"
   ],
