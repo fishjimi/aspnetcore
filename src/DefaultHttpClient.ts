@@ -6,8 +6,8 @@ import { FetchHttpClient } from "./FetchHttpClient";
 import { HttpClient, HttpRequest, HttpResponse } from "./HttpClient";
 import { ILogger } from "./ILogger";
 import { Platform } from "./Utils";
-import { XhrHttpClient } from "./XhrHttpClient";
 import { UniHttpClient } from "./UniHttpClient";
+import { XhrHttpClient } from "./XhrHttpClient";
 
 /** Default implementation of {@link @microsoft/signalr.HttpClient}. */
 export class DefaultHttpClient extends HttpClient {

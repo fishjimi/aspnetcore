@@ -3,7 +3,6 @@
 
 import { AccessTokenHttpClient } from "./AccessTokenHttpClient";
 import { DefaultHttpClient } from "./DefaultHttpClient";
-import { getEventSource, getWS } from "./DynamicImports";
 import { AggregateErrors, DisabledTransportError, FailedToNegotiateWithServerError, FailedToStartTransportError, HttpError, UnsupportedTransportError, AbortError } from "./Errors";
 import { IConnection } from "./IConnection";
 import { IHttpConnectionOptions } from "./IHttpConnectionOptions";
@@ -14,7 +13,6 @@ import { ServerSentEventsTransport } from "./ServerSentEventsTransport";
 import { UniWebSocket } from "./UniWebSocket";
 import { Arg, createLogger, getUserAgentHeader, Platform } from "./Utils";
 import { WebSocketTransport } from "./WebSocketTransport";
-
 
 /** @private */
 const enum ConnectionState {
@@ -58,7 +56,7 @@ export class HttpConnection implements IConnection {
     private transport?: ITransport;
     private _startInternalPromise?: Promise<void>;
     private _stopPromise?: Promise<void>;
-    private _stopPromiseResolver: (value?: PromiseLike<void>) => void = () => { };
+    private _stopPromiseResolver: (value?: PromiseLike<void>) => void = () => {};
     private _stopError?: Error;
     private _accessTokenFactory?: () => string | Promise<string>;
     private _sendQueue?: TransportSendQueue;
@@ -92,8 +90,11 @@ export class HttpConnection implements IConnection {
         if (Platform.isUniapp && !options.WebSocket) {
             options.WebSocket = UniWebSocket;
         } else if (Platform.isNode && typeof require !== "undefined") {
-            webSocketModule = getWS();
-            eventSourceModule = getEventSource();
+            // In order to ignore the dynamic require in webpack builds we need to do this magic
+            // @ts-ignore: TS doesn't know about these names
+            const requireFunc = typeof __webpack_require__ === "function" ? __non_webpack_require__ : require;
+            webSocketModule = requireFunc("ws");
+            eventSourceModule = requireFunc("eventsource");
         }
 
         if (!Platform.isNode && typeof WebSocket !== "undefined" && !options.WebSocket) {
@@ -312,7 +313,7 @@ export class HttpConnection implements IConnection {
     }
 
     private async _getNegotiationResponse(url: string): Promise<INegotiateResponse> {
-        const headers: { [k: string]: string } = {};
+        const headers: {[k: string]: string} = {};
         const [name, value] = getUserAgentHeader();
         headers[name] = value;
 
@@ -593,17 +594,17 @@ export class HttpConnection implements IConnection {
         negotiateUrl += index === -1 ? "" : url.substring(index);
 
         if (negotiateUrl.indexOf("negotiateVersion") === -1) {
-            negotiateUrl += index === -1 ? "?" : "&";
+            negotiateUrl += negotiateUrl.indexOf("?") === -1 ? "?" : "&";
             negotiateUrl += "negotiateVersion=" + this._negotiateVersion;
         }
 
-        if (!(negotiateUrl.indexOf("useAck") === -1)) {
-            if (negotiateUrl.indexOf("useAck=true") > -1) {
+        if (!(negotiateUrl.indexOf("useStatefulReconnect") === -1)) {
+            if (negotiateUrl.indexOf("useStatefulReconnect=true") > -1) {
                 this._options._useStatefulReconnect = true;
             }
         } else if (this._options._useStatefulReconnect === true) {
-            negotiateUrl += index === -1 ? "?" : "&";
-            negotiateUrl += "useAck=true";
+            negotiateUrl += negotiateUrl.indexOf("?") === -1 ? "?" : "&";
+            negotiateUrl += "useStatefulReconnect=true";
         }
 
         return negotiateUrl;
@@ -644,8 +645,8 @@ export class TransportSendQueue {
     }
 
     private _bufferData(data: string | ArrayBuffer): void {
-        if (this._buffer.length && typeof (this._buffer[0]) !== typeof (data)) {
-            throw new Error(`Expected data to be of type ${typeof (this._buffer)} but was of type ${typeof (data)}`);
+        if (this._buffer.length && typeof(this._buffer[0]) !== typeof(data)) {
+            throw new Error(`Expected data to be of type ${typeof(this._buffer)} but was of type ${typeof(data)}`);
         }
 
         this._buffer.push(data);
@@ -669,7 +670,7 @@ export class TransportSendQueue {
             const transportResult = this._transportResult!;
             this._transportResult = undefined;
 
-            const data = typeof (this._buffer[0]) === "string" ?
+            const data = typeof(this._buffer[0]) === "string" ?
                 this._buffer.join("") :
                 TransportSendQueue._concatBuffers(this._buffer);
 
