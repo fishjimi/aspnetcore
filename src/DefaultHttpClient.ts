@@ -6,7 +6,6 @@ import { FetchHttpClient } from "./FetchHttpClient";
 import { HttpClient, HttpRequest, HttpResponse } from "./HttpClient";
 import { ILogger } from "./ILogger";
 import { Platform } from "./Utils";
-import { UniHttpClient } from "./UniHttpClient";
 import { XhrHttpClient } from "./XhrHttpClient";
 
 /** Default implementation of {@link @microsoft/signalr.HttpClient}. */
@@ -17,13 +16,21 @@ export class DefaultHttpClient extends HttpClient {
     public constructor(logger: ILogger) {
         super();
 
-        if (Platform.isUniapp) {
-            this._httpClient = new UniHttpClient(logger);
-        } else if (typeof fetch !== "undefined" || Platform.isNode) {
+        if (typeof fetch !== "undefined" || Platform.isNode) {
             this._httpClient = new FetchHttpClient(logger);
         } else if (typeof XMLHttpRequest !== "undefined") {
             this._httpClient = new XhrHttpClient(logger);
         } else {
+            // detect common mini-program globals
+            const g = globalThis as any;
+            const isMiniProgram = !!(g.uni || g.wx || g.my || g.tt || g.swan);
+            if (isMiniProgram) {
+                throw new Error(
+                    "Mini-program environment detected but no httpClient was configured. "
+                    + "Please use: .withUrl(url, { ...configureMiniProgram(uni) }) — "
+                    + "see https://github.com/fishjimi/aspnetcore#quick-start",
+                );
+            }
             throw new Error("No usable HttpClient found.");
         }
     }

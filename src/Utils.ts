@@ -51,10 +51,6 @@ export class Platform {
         return !Platform.isNode && typeof window === "object" && typeof window.document === "undefined";
     }
 
-    static get isUniapp(): boolean {
-        return typeof uni === "object";
-    }
-
     // Node apps shouldn't have a window object, but WebWorkers don't either
     // so we need to check for both WebWorker and window
     public static get isNode(): boolean {
@@ -240,8 +236,7 @@ export function constructUserAgent(version: string, os: string, runtime: string,
     return userAgent;
 }
 
-// eslint-disable-next-line spaced-comment
-/*#__PURE__*/ function getOsName(): string {
+function getOsName(): string {
     if (Platform.isNode) {
         switch (process.platform) {
             case "win32":
@@ -258,8 +253,7 @@ export function constructUserAgent(version: string, os: string, runtime: string,
     }
 }
 
-// eslint-disable-next-line spaced-comment
-/*#__PURE__*/ function getRuntimeVersion(): string | undefined {
+function getRuntimeVersion(): string | undefined {
     if (Platform.isNode) {
         return process.versions.node;
     }

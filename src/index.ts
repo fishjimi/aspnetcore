@@ -6,7 +6,7 @@ export { AbortSignal } from "./AbortController";
 export { AbortError, HttpError, TimeoutError } from "./Errors";
 export { HttpClient, HttpRequest, HttpResponse } from "./HttpClient";
 export { DefaultHttpClient } from "./DefaultHttpClient";
-export { UniHttpClient } from "./UniHttpClient";
+export { MiniProgramPlatform, MiniProgramHttpClient, createMiniProgramWebSocket, configureMiniProgram } from "./MiniProgram";
 export { IHttpConnectionOptions } from "./IHttpConnectionOptions";
 export { IStatefulReconnectOptions } from "./IStatefulReconnectOptions";
 export { HubConnection, HubConnectionState } from "./HubConnection";
