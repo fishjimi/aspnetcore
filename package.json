@@ -1,6 +1,6 @@
 {
   "name": "uniapp-signalr",
-  "version": "10.0.0",
+  "version": "10.0.1",
   "description": "ASP.NET Core SignalR Client, Add Uniapp miniprogram support by Jimifish",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -26,19 +26,18 @@
   },
   "keywords": [
     "uniapp",
-    "signalr",
-    "aspnetcore"
+    "signalr"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fishjimi/aspnetcore.git"
+    "url": "git+https://github.com/fishjimi/uniapp-signalr.git"
   },
   "author": "Jimifish",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fishjimi/aspnetcore/issues"
+    "url": "https://github.com/fishjimi/uniapp-signalr/issues"
   },
-  "homepage": "https://github.com/fishjimi/aspnetcore/tree/main/src/SignalR#readme",
+  "homepage": "https://github.com/fishjimi/uniapp-signalr#readme",
   "files": [
     "dist/**/*",
     "src/**/*"

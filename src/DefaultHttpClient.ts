@@ -28,7 +28,7 @@ export class DefaultHttpClient extends HttpClient {
                 throw new Error(
                     "Mini-program environment detected but no httpClient was configured. "
                     + "Please use: .withUrl(url, { ...configureMiniProgram(uni) }) — "
-                    + "see https://github.com/fishjimi/aspnetcore#quick-start",
+                    + "see https://github.com/fishjimi/uniapp-signalr#quick-start",
                 );
             }
             throw new Error("No usable HttpClient found.");
